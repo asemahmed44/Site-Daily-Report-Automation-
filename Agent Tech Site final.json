@@ -1,0 +1,920 @@
+{
+  "name": "Agent Tech Site final",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Telegram Trigger1').item.json.message.text }}",
+        "options": {
+          "systemMessage": "=You are a site report assistant for engineering projects.\n\nYour job is to receive daily reports from engineers via Telegram and extract the data, then reply to them.\n\n### STEP 1 — EXTRACT from the message:\n- engineer_name: from \"المهندس:\"\n- project_name: from \"المشروع:\"\n- achievement: from \"الإنجاز:\"\n- problem: from \"المشكلة:\" — if none write \"لا يوجد\"\n- hours: from \"الساعات:\" — number only, if missing write 0\n- follow_up: from \"مطلوب:\" — if none write \"لا يوجد\"\n\n### STEP 2 — Save to Google Sheets:\nUse the 'Save Report to Sheets1' tool with all extracted fields.\n\n### STEP 3 — Reply to engineer via Telegram:\nYou MUST call the 'Send a text message in Telegram1' tool to send the reply.\nThe Text parameter MUST be filled with this exact Arabic message:\n\"✅ تم استلام تقريرك يا [engineer_name]، شكراً!\"\n(Replace [engineer_name] with the actual extracted name.)\n\nDo NOT just write the reply as your response — you MUST use the Telegram tool to actually send it.\n\n### IF any field is missing:\nUse the 'Send a text message in Telegram1' tool to ask the engineer specifically for the missing field before saving. Do not save incomplete reports.\n\n### Always reply in Arabic."
+        }
+      },
+      "id": "e4fbc022-59e9-4fb6-870a-6f6e608dfa33",
+      "name": "AI Agent1",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        896,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "b49c5345-c9d3-4163-bb34-38058577fe9d",
+      "name": "OpenAI Chat Model1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        192,
+        560
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "MkYuX1Vbm51UBcwh",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger1').item.json.message.chat.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        480,
+        544
+      ],
+      "id": "1a4c39e0-e3f8-4bad-9b02-8f297e4ab517",
+      "name": "Simple Memory1"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        64,
+        192
+      ],
+      "id": "de584cdd-bba6-467c-aae1-e8d94a2501ef",
+      "name": "Telegram Trigger1",
+      "webhookId": "10aaa662-4938-4c0e-8b4d-5dfe9fd727e7",
+      "credentials": {
+        "telegramApi": {
+          "id": "fVUGDl5Anugl8ptx",
+          "name": "Sit Report Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger1').item.json.message.chat.id }}",
+        "text": "={{ $fromAI('Text', 'The reply message text to send to the engineer in Arabic', 'string') }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegramTool",
+      "typeVersion": 1.2,
+      "position": [
+        816,
+        512
+      ],
+      "id": "90378659-6bc0-46bf-903f-b6863fad17d1",
+      "name": "Send a text message in Telegram1",
+      "webhookId": "4bb9860c-d521-4ca1-9728-49ba2d9e6472",
+      "credentials": {
+        "telegramApi": {
+          "id": "fVUGDl5Anugl8ptx",
+          "name": "Sit Report Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7b37729f-76da-4a8c-a2e3-b7644bc84884",
+              "name": "message.chat.id",
+              "value": "={{ $json.message.chat.id }}",
+              "type": "number"
+            },
+            {
+              "id": "07c66733-a7c0-486d-adea-8c45a44cbf19",
+              "name": "message.chat.first_name",
+              "value": "={{ $json.message.chat.first_name }}",
+              "type": "string"
+            },
+            {
+              "id": "7862e079-5a50-4d7e-be0c-b41894f57fee",
+              "name": "message.chat.last_name",
+              "value": "={{ $json.message.chat.last_name }}",
+              "type": "string"
+            },
+            {
+              "id": "3f04501f-3626-43f1-a310-0bd41f66d251",
+              "name": "message_text",
+              "value": "={{ $json.message.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        320,
+        192
+      ],
+      "id": "8cf08f8e-e404-4246-94e4-f3d878f66ddf",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1D9l4AfDO9uYDSvd0RYm58TgIwNvB4uucsD9Nlr-uCWg",
+          "mode": "list",
+          "cachedResultName": "sit tech engineers ",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1D9l4AfDO9uYDSvd0RYm58TgIwNvB4uucsD9Nlr-uCWg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1D9l4AfDO9uYDSvd0RYm58TgIwNvB4uucsD9Nlr-uCWg/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "last_name": "={{ $json.message.chat.last_name }}",
+            "chat_id": "={{ $json.message.chat.id }}",
+            "first_name": "={{ $json.message.chat.first_name }}"
+          },
+          "matchingColumns": [
+            "chat_id"
+          ],
+          "schema": [
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "first_name",
+              "displayName": "first_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_name",
+              "displayName": "last_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        576,
+        192
+      ],
+      "id": "bfd19a45-9a89-4cdf-985a-09a63faf753f",
+      "name": "Append or update row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "5RvPbeshpF42xekr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1D9l4AfDO9uYDSvd0RYm58TgIwNvB4uucsD9Nlr-uCWg",
+          "mode": "list",
+          "cachedResultName": "sit tech engineers",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1D9l4AfDO9uYDSvd0RYm58TgIwNvB4uucsD9Nlr-uCWg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1973826476,
+          "mode": "list",
+          "cachedResultName": "data ",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1D9l4AfDO9uYDSvd0RYm58TgIwNvB4uucsD9Nlr-uCWg/edit#gid=1973826476"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "engineer_name": "={{ $fromAI('engineer_name', ``, 'string') }}",
+            "project_name": "={{ $fromAI('project_name', ``, 'string') }}",
+            "achievement": "={{ $fromAI('achievement', ``, 'string') }}",
+            "problem": "={{ $fromAI('problem', ``, 'string') }}",
+            "hours": "={{ $fromAI('hours', ``, 'string') }}",
+            "followup": "={{ $fromAI('followup', ``, 'string') }}",
+            "chat_id": "={{ $('Telegram Trigger1').item.json.message.chat.id }}",
+            "date": "={{ $now.toFormat('yyyy-MM-dd') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "date",
+              "displayName": "date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "engineer_name",
+              "displayName": "engineer_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "project_name",
+              "displayName": "project_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "achievement",
+              "displayName": "achievement",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "problem",
+              "displayName": "problem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "hours",
+              "displayName": "hours",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "followup",
+              "displayName": "followup",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1088,
+        512
+      ],
+      "id": "4bfdb222-91ad-4c76-b1f0-5c2e81fd65f6",
+      "name": "Save Report to Sheets1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "5RvPbeshpF42xekr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 20 * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        96,
+        1120
+      ],
+      "id": "51600673-d29b-4ee5-84b7-fa535a793371",
+      "name": "Schedule Trigger 8PM"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1D9l4AfDO9uYDSvd0RYm58TgIwNvB4uucsD9Nlr-uCWg",
+          "mode": "list",
+          "cachedResultName": "sit tech engineers ",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1D9l4AfDO9uYDSvd0RYm58TgIwNvB4uucsD9Nlr-uCWg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1973826476,
+          "mode": "list",
+          "cachedResultName": "data ",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1D9l4AfDO9uYDSvd0RYm58TgIwNvB4uucsD9Nlr-uCWg/edit#gid=1973826476"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "date",
+              "lookupValue": "={{ $now.setZone('Africa/Cairo').toFormat('yyyy-MM-dd') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        336,
+        1120
+      ],
+      "id": "2bad8f18-fc5f-43e9-befb-daaede7f0f4d",
+      "name": "Get Today Reports",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "5RvPbeshpF42xekr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nif (items.length === 0) {\n  return [{ json: { hasReports: false, report: 'لا يوجد تقارير اليوم' } }];\n}\n\nconst today = new Date().toLocaleDateString('ar-EG', {\n  weekday: 'long',\n  year: 'numeric',\n  month: 'long',\n  day: 'numeric'\n});\n\nlet html = `\n<div dir=\"rtl\" style=\"font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;\">\n<h2 style=\"background-color: #2c3e50; color: white; padding: 15px; border-radius: 8px;\">📊 التقرير اليومي - ${today}</h2>\n<p style=\"color: #666;\">عدد التقارير المستلمة: <strong>${items.length}</strong></p>\n<hr/>\n`;\n\nlet totalHours = 0;\nlet hasProblems = [];\n\nfor (const item of items) {\n  const r = item.json;\n  const hours = parseFloat(r.hours) || 0;\n  totalHours += hours;\n  \n  const problemColor = (r.problem && r.problem !== 'لا يوجد') ? '#e74c3c' : '#27ae60';\n  const problemIcon = (r.problem && r.problem !== 'لا يوجد') ? '⚠️' : '✅';\n  \n  if (r.problem && r.problem !== 'لا يوجد') {\n    hasProblems.push({ engineer: r.engineer_name, project: r.project_name, problem: r.problem });\n  }\n\n  html += `\n  <div style=\"border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #f9f9f9;\">\n    <h3 style=\"color: #2c3e50; margin-top: 0;\">🏗️ ${r.project_name}</h3>\n    <table style=\"width: 100%; border-collapse: collapse;\">\n      <tr><td style=\"padding: 5px; color: #666; width: 140px;\">👷 المهندس:</td><td style=\"padding: 5px;\"><strong>${r.engineer_name}</strong></td></tr>\n      <tr><td style=\"padding: 5px; color: #666;\">✅ الإنجاز:</td><td style=\"padding: 5px;\">${r.achievement}</td></tr>\n      <tr><td style=\"padding: 5px; color: #666;\">${problemIcon} المشكلة:</td><td style=\"padding: 5px; color: ${problemColor};\">${r.problem || 'لا يوجد'}</td></tr>\n      <tr><td style=\"padding: 5px; color: #666;\">⏱️ الساعات:</td><td style=\"padding: 5px;\">${r.hours} ساعة</td></tr>\n      <tr><td style=\"padding: 5px; color: #666;\">📌 مطلوب:</td><td style=\"padding: 5px;\">${r.followup || 'لا يوجد'}</td></tr>\n    </table>\n  </div>`;\n}\n\n// Summary\nhtml += `\n<div style=\"background: #2c3e50; color: white; padding: 15px; border-radius: 8px; margin-top: 20px;\">\n  <h3 style=\"margin-top: 0;\">📌 ملخص اليوم</h3>\n  <p>⏱️ إجمالي الساعات: <strong>${totalHours} ساعة</strong></p>\n  <p>📋 عدد التقارير: <strong>${items.length} تقرير</strong></p>\n  <p>⚠️ مشاكل تحتاج متابعة: <strong>${hasProblems.length}</strong></p>\n`;\n\nif (hasProblems.length > 0) {\n  html += `<ul>`;\n  for (const p of hasProblems) {\n    html += `<li>${p.engineer} - ${p.project}: ${p.problem}</li>`;\n  }\n  html += `</ul>`;\n}\n\nhtml += `</div></div>`;\n\nreturn [{ json: { hasReports: true, report: html, count: items.length, totalHours } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        576,
+        1120
+      ],
+      "id": "6a9c98b1-b4ed-4b5a-b197-45a951cac444",
+      "name": "Build Report HTML"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "condition-001",
+              "leftValue": "={{ $json.hasReports }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        816,
+        1120
+      ],
+      "id": "137f8a9c-5e6f-475f-8b4b-fe3e9c1730d0",
+      "name": "Has Reports?"
+    },
+    {
+      "parameters": {
+        "sendTo": "awaleed@thelvx.com",
+        "subject": "=📊 التقرير اليومي - {{ $now.toFormat('dd/MM/yyyy') }} - {{ $('Build Report HTML').item.json.count }} تقارير",
+        "message": "={{ $('Build Report HTML').item.json.report }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1872,
+        1248
+      ],
+      "id": "2ee6eaa2-3967-43d1-88e3-e76a63d9690f",
+      "name": "Send Daily Report",
+      "webhookId": "c6f4f450-21b1-453e-af88-b56c138dc851",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "puku7VTPgid14Iz0",
+          "name": "Gmail account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 17 * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        320,
+        768
+      ],
+      "id": "13fb29c2-4bdb-48f3-9650-63f7a1ca4295",
+      "name": "Schedule Trigger 5PM"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1D9l4AfDO9uYDSvd0RYm58TgIwNvB4uucsD9Nlr-uCWg",
+          "mode": "list",
+          "cachedResultName": "sit tech engineers",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1D9l4AfDO9uYDSvd0RYm58TgIwNvB4uucsD9Nlr-uCWg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "CHat_id&name",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1D9l4AfDO9uYDSvd0RYm58TgIwNvB4uucsD9Nlr-uCWg/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        560,
+        768
+      ],
+      "id": "dea1a162-d037-474f-be1d-d025aa475a25",
+      "name": "Get Engineers List",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "5RvPbeshpF42xekr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "=مساء الخير ياهندسه \n🔔 تقرير نهاية اليوم يا {{ $json.first_name }}!\n\nرجاءً ابعت تقريرك بالشكل ده:\n\nالمهندس: [اسمك]\nالمشروع: [اسم المشروع]\nالإنجاز: [اللي اتعمل]\nالمشكلة: [أي مشاكل]\nالساعات: [عدد الساعات]\nمطلوب: [أي متابعة]",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        800,
+        768
+      ],
+      "id": "92988065-22a9-4ca1-b9c6-106a94f17d18",
+      "name": "Send Reminder",
+      "webhookId": "ae570573-9077-4d1d-b1a7-dcdf8ea19099",
+      "retryOnFail": true,
+      "credentials": {
+        "telegramApi": {
+          "id": "fVUGDl5Anugl8ptx",
+          "name": "Sit Report Bot"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "content": "## Daily_Reminder_Engineers",
+        "height": 224,
+        "width": 1472
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        720
+      ],
+      "typeVersion": 1,
+      "id": "637b02f2-8532-407d-8053-4ea56371efbe",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Sent report to Eng Ahmed Waled",
+        "height": 336,
+        "width": 1472
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        960
+      ],
+      "id": "78a581ad-c3bc-465a-8dc8-2a760f2f7b90",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## agent workflow",
+        "height": 704,
+        "width": 1472,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "da3d3e61-7d32-477b-b9ed-fd56c1725876",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "sendTo": "haaaag@gmail.com",
+        "subject": "=📊 التقرير اليومي - {{ $now.toFormat('dd/MM/yyyy') }} - {{ $('Build Report HTML').item.json.count }} تقارير",
+        "message": "={{ $('Build Report HTML').item.json.report }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1664,
+        1024
+      ],
+      "id": "ba766032-980e-4dde-b9dc-a2cf52cdc496",
+      "name": "Send Daily Report1",
+      "webhookId": "c6f4f450-21b1-453e-af88-b56c138dc851",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "puku7VTPgid14Iz0",
+          "name": "Gmail account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        32,
+        1504
+      ],
+      "id": "2fbf6812-81f6-4f74-9fbf-35c2046d034d",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "chatId": "8518328458",
+        "text": "Error in Agent Tech Site final",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        1504
+      ],
+      "id": "f5f1d152-098b-4e82-9b06-8df4b99c472e",
+      "name": "Send a text message",
+      "webhookId": "7c51a9c8-90ac-4adf-ac2d-34536d14264c",
+      "credentials": {
+        "telegramApi": {
+          "id": "fVUGDl5Anugl8ptx",
+          "name": "Sit Report Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## ERROR TREGER\n",
+        "height": 448,
+        "width": 480,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        1312
+      ],
+      "typeVersion": 1,
+      "id": "cf539899-a945-4eb4-90c6-def078902506",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "operation": "sendDocument",
+        "chatId": "8710620957",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1920,
+        1040
+      ],
+      "id": "bb5c397d-909a-4700-83cb-3865556946fa",
+      "name": "Send a document",
+      "webhookId": "ea239ca2-919f-4317-89df-3af303c5145f",
+      "credentials": {
+        "telegramApi": {
+          "id": "fVUGDl5Anugl8ptx",
+          "name": "Sit Report Bot"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "sendTo": "Nahla.shawky@lv.business",
+        "subject": "=📊 التقرير اليومي - {{ $now.toFormat('dd/MM/yyyy') }} - {{ $('Build Report HTML').item.json.count }} تقارير",
+        "message": "={{ $('Build Report HTML').item.json.report }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1120,
+        1104
+      ],
+      "id": "5579b8f9-4410-4f03-a741-727d980e53bc",
+      "name": "Send a message",
+      "webhookId": "57685c7d-2aab-45fb-abe0-896953a1ebc0",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "puku7VTPgid14Iz0",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory1": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message in Telegram1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Report to Sheets1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger 8PM": {
+      "main": [
+        [
+          {
+            "node": "Get Today Reports",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Today Reports": {
+      "main": [
+        [
+          {
+            "node": "Build Report HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Report HTML": {
+      "main": [
+        [
+          {
+            "node": "Has Reports?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Reports?": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger 5PM": {
+      "main": [
+        [
+          {
+            "node": "Get Engineers List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Engineers List": {
+      "main": [
+        [
+          {
+            "node": "Send Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Daily Report": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true,
+    "timeSavedMode": "fixed",
+    "timezone": "Africa/Cairo",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "a4c0dbd6-72ce-4e9a-8249-de43741226e3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f2bc043fe69d31a15311aa2cd21b3ee292a856ab9721a5e17b127c2d9716878a"
+  },
+  "id": "uN1Px2vj-R1JMtSd8tFCY",
+  "tags": [
+    {
+      "updatedAt": "2026-03-30T12:30:27.284Z",
+      "createdAt": "2026-03-30T12:30:27.284Z",
+      "id": "EZa4imRPhkR3c7yO",
+      "name": "Odoo AI Agent"
+    }
+  ]
+}
